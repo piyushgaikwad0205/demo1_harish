@@ -386,8 +386,8 @@ app.use('/api', (req, res) => {
   });
 });
 
-// Catch-all to serve index.html
-app.get('*', (req, res) => {
+// Catch-all to serve index.html for frontend routing
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
