@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus Core • Demo Server Engine</title>
+  <meta name="description" content="High performance interactive Node.js & Express demo server with REST API explorer, real-time traffic monitoring, and mock data management.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title-wrap">
+            <h1 class="brand-title">Nexus Engine</h1>
+            <span class="badge badge-version">v1.0.0</span>
+          </div>
+          <p class="brand-subtitle">Express REST API & Live Telemetry Server</p>
+        </div>
+      </div>
+
+      <div class="header-status">
+        <div class="server-status-pill">
+          <span class="status-dot pulsing"></span>
+          <span class="status-text">Server Active</span>
+        </div>
+        <div class="header-stat">
+          <span class="stat-label">HOST</span>
+          <span class="stat-val font-mono" id="serverHost">localhost:3000</span>
+        </div>
+        <div class="header-stat">
+          <span class="stat-label">UPTIME</span>
+          <span class="stat-val font-mono" id="liveUptime">0s</span>
+        </div>
+        <button id="copyBaseUrlBtn" class="btn btn-secondary btn-sm" title="Copy Base URL">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span>Copy URL</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-main">
+    <!-- Telemetry Cards -->
+    <section class="telemetry-grid">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">TOTAL REQUESTS</span>
+          <div class="metric-icon icon-cyan">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          </div>
+        </div>
+        <div class="metric-value" id="metricTotalReq">0</div>
+        <div class="metric-foot text-muted">Processed since boot</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">AVG LATENCY</span>
+          <div class="metric-icon icon-emerald">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          </div>
+        </div>
+        <div class="metric-value"><span id="metricAvgLatency">0</span><span class="metric-unit">ms</span></div>
+        <div class="metric-foot text-emerald">Ultra-low overhead</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">HEAP MEMORY</span>
+          <div class="metric-icon icon-violet">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path><path d="M12 12v9"></path><path d="m8 17 4 4 4-4"></path></svg>
+          </div>
+        </div>
+        <div class="metric-value"><span id="metricMemory">--</span><span class="metric-unit">MB</span></div>
+        <div class="metric-foot text-muted" id="metricMemorySub">RSS: -- MB</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">ENVIRONMENT</span>
+          <div class="metric-icon icon-amber">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          </div>
+        </div>
+        <div class="metric-value" id="metricEnv">Node</div>
+        <div class="metric-foot text-muted" id="metricPlatform">Windows / x64</div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs-wrapper">
+      <div class="nav-tabs" role="tablist">
+        <button class="nav-tab active" data-tab="playground" id="tabPlayground">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          API Playground
+        </button>
+        <button class="nav-tab" data-tab="users" id="tabUsers">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Users Data <span class="tab-counter" id="usersTabCount">0</span>
+        </button>
+        <button class="nav-tab" data-tab="products" id="tabProducts">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+          Products Catalog <span class="tab-counter" id="productsTabCount">0</span>
+        </button>
+        <button class="nav-tab" data-tab="traffic" id="tabTraffic">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          Live Traffic Stream <span class="tab-counter" id="trafficTabCount">0</span>
+        </button>
+        <button class="nav-tab" data-tab="docs" id="tabDocs">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          Endpoints Reference
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 1: API PLAYGROUND -->
+    <section class="tab-content active" id="view-playground">
+      <div class="playground-layout">
+        <!-- Request Builder Panel -->
+        <div class="panel glass-panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Request Builder</h2>
+            <div class="preset-dropdown-wrap">
+              <label for="endpointPresets" class="sr-only">Presets</label>
+              <select id="endpointPresets" class="form-select">
+                <option value="custom">⚡ Select Endpoint Preset...</option>
+                <option value="health">GET /api/health</option>
+                <option value="metrics">GET /api/metrics</option>
+                <option value="get_users">GET /api/users</option>
+                <option value="get_user_1">GET /api/users/1</option>
+                <option value="post_user">POST /api/users</option>
+                <option value="get_products">GET /api/products</option>
+                <option value="post_product">POST /api/products</option>
+                <option value="echo">POST /api/echo</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="panel-body">
+            <!-- URL Bar -->
+            <div class="url-bar-group">
+              <select id="httpMethod" class="method-select method-get">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="DELETE">DELETE</option>
+              </select>
+              <input type="text" id="apiUrlInput" class="form-input font-mono" value="/api/health" placeholder="/api/health">
+              <button id="sendRequestBtn" class="btn btn-primary">
+                <span>Send</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              </button>
+            </div>
+
+            <!-- Request Body Container -->
+            <div class="request-body-section" id="requestBodySection" style="display: none;">
+              <div class="sub-header">
+                <span class="sub-title">Request Payload (JSON)</span>
+                <button type="button" class="btn-text" id="formatJsonBtn">Format JSON</button>
+              </div>
+              <textarea id="requestBodyInput" class="form-textarea font-mono" rows="6" spellcheck="false" placeholder="{}"></textarea>
+            </div>
+
+            <!-- cURL Quick Command -->
+            <div class="curl-box">
+              <div class="sub-header">
+                <span class="sub-title">Equivalent cURL Command</span>
+                <button class="btn-text" id="copyCurlBtn">Copy cURL</button>
+              </div>
+              <div class="curl-code-wrap">
+                <code id="curlOutput" class="font-mono">curl -X GET http://localhost:3000/api/health</code>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Response Inspector Panel -->
+        <div class="panel glass-panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Response Inspector</h2>
+            <div class="response-meta" id="responseMeta" style="display: none;">
+              <span class="badge" id="resStatusBadge">200 OK</span>
+              <span class="badge badge-subtle font-mono" id="resTimeBadge">12ms</span>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="response-view-controls">
+              <span class="text-muted font-mono" id="resSizeLabel">Response Body</span>
+              <button class="btn-text" id="copyResponseBtn">Copy JSON</button>
+            </div>
+            <div class="code-container">
+              <pre id="responseJsonOutput" class="font-mono"><span class="code-placeholder">// Send a request to see the live response payload here...</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: USERS DATA -->
+    <section class="tab-content" id="view-users">
+      <div class="panel glass-panel">
+        <div class="panel-header flex-between">
+          <div>
+            <h2 class="panel-title">Users Directory</h2>
+            <p class="panel-subtitle">Live in-memory database managed via <code>/api/users</code></p>
+          </div>
+          <div class="header-actions">
+            <input type="text" id="userSearchInput" class="form-input form-input-sm" placeholder="Search by name or email...">
+            <button id="openAddUserModalBtn" class="btn btn-primary btn-sm">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Add User</span>
+            </button>
+            <button id="refreshUsersBtn" class="btn btn-secondary btn-sm" title="Refresh">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="table-responsive">
+            <table class="data-table" id="usersTable">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: PRODUCTS CATALOG -->
+    <section class="tab-content" id="view-products">
+      <div class="panel glass-panel">
+        <div class="panel-header flex-between">
+          <div>
+            <h2 class="panel-title">Products Catalog</h2>
+            <p class="panel-subtitle">Managed via <code>/api/products</code> endpoints</p>
+          </div>
+          <div class="header-actions">
+            <select id="productCategoryFilter" class="form-select form-select-sm">
+              <option value="">All Categories</option>
+              <option value="Hardware">Hardware</option>
+              <option value="Peripherals">Peripherals</option>
+              <option value="Software">Software</option>
+              <option value="Audio">Audio</option>
+            </select>
+            <button id="openAddProductModalBtn" class="btn btn-primary btn-sm">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Add Product</span>
+            </button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="products-grid" id="productsGrid">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: LIVE TRAFFIC STREAM -->
+    <section class="tab-content" id="view-traffic">
+      <div class="panel glass-panel">
+        <div class="panel-header flex-between">
+          <div>
+            <h2 class="panel-title">Real-Time Traffic Stream</h2>
+            <p class="panel-subtitle">Automatic request interception and telemetry logs</p>
+          </div>
+          <div class="header-actions">
+            <div class="live-stream-badge">
+              <span class="status-dot pulsing"></span>
+              <span>Listening</span>
+            </div>
+            <button id="clearLogsBtn" class="btn btn-secondary btn-sm">Clear Logs</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="table-responsive">
+            <table class="data-table font-mono" id="trafficTable">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Method</th>
+                  <th>Path</th>
+                  <th>Status</th>
+                  <th>Duration</th>
+                  <th>IP Address</th>
+                </tr>
+              </thead>
+              <tbody id="trafficTableBody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: API REFERENCE -->
+    <section class="tab-content" id="view-docs">
+      <div class="panel glass-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">REST API Reference & Documentation</h2>
+          <p class="panel-subtitle">All available pre-configured endpoints and request specifications</p>
+        </div>
+        <div class="panel-body">
+          <div class="docs-list">
+            <div class="doc-card">
+              <div class="doc-header">
+                <span class="method-tag method-get">GET</span>
+                <code class="doc-path">/api/health</code>
+                <span class="doc-desc">Returns server heartbeat, memory utilization, and system hardware metrics</span>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-header">
+                <span class="method-tag method-get">GET</span>
+                <code class="doc-path">/api/metrics</code>
+                <span class="doc-desc">Returns aggregate request statistics, average response latency, and hit counters</span>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-header">
+                <span class="method-tag method-get">GET</span>
+                <code class="doc-path">/api/users</code>
+                <span class="doc-desc">Lists users. Supports query params: <code>?search=</code>, <code>?role=</code>, <code>?status=</code></span>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-header">
+                <span class="method-tag method-post">POST</span>
+                <code class="doc-path">/api/users</code>
+                <span class="doc-desc">Creates a new user. Payload: <code>{ "name", "email", "role", "status" }</code></span>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-header">
+                <span class="method-tag method-get">GET</span>
+                <code class="doc-path">/api/users/:id</code>
+                <span class="doc-desc">Retrieves details for a specific user ID</span>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-header">
+                <span class="method-tag method-put">PUT</span>
+                <code class="doc-path">/api/users/:id</code>
+                <span class="doc-desc">Updates existing user attributes by ID</span>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-header">
+                <span class="method-tag method-delete">DELETE</span>
+                <code class="doc-path">/api/users/:id</code>
+                <span class="doc-desc">Deletes user record by ID</span>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-header">
+                <span class="method-tag method-get">GET</span>
+                <code class="doc-path">/api/products</code>
+                <span class="doc-desc">Lists catalog items. Query params: <code>?category=</code>, <code>?search=</code></span>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-header">
+                <span class="method-tag method-post">POST</span>
+                <code class="doc-path">/api/products</code>
+                <span class="doc-desc">Adds a catalog product. Payload: <code>{ "name", "category", "price", "stock" }</code></span>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-header">
+                <span class="method-tag method-delete">DELETE</span>
+                <code class="doc-path">/api/products/:id</code>
+                <span class="doc-desc">Removes a product from catalog by ID</span>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-header">
+                <span class="method-tag method-post">POST</span>
+                <code class="doc-path">/api/echo</code>
+                <span class="doc-desc">Mirror endpoint returning back received headers, payload, and server timestamp</span>
+              </div>
+            </div>
+
+            <div class="doc-card">
+              <div class="doc-header">
+                <span class="method-tag method-get">GET</span>
+                <code class="doc-path">/api/logs</code>
+                <span class="doc-desc">Returns the latest intercepted HTTP request log array</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Add User -->
+  <div class="modal-backdrop" id="addUserModal" style="display: none;">
+    <div class="modal-box glass-panel">
+      <div class="modal-header">
+        <h3 class="modal-title">Create New User</h3>
+        <button class="modal-close-btn" id="closeAddUserModalBtn">&times;</button>
+      </div>
+      <form id="addUserForm" class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="newUserName">Full Name *</label>
+          <input type="text" id="newUserName" class="form-input" required placeholder="e.g. Jordan Hayes">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newUserEmail">Email Address *</label>
+          <input type="email" id="newUserEmail" class="form-input" required placeholder="jordan@nexus.dev">
+        </div>
+        <div class="form-row">
+          <div class="form-group col-half">
+            <label class="form-label" for="newUserRole">Role</label>
+            <input type="text" id="newUserRole" class="form-input" placeholder="e.g. Fullstack Engineer" value="Software Engineer">
+          </div>
+          <div class="form-group col-half">
+            <label class="form-label" for="newUserStatus">Status</label>
+            <select id="newUserStatus" class="form-select">
+              <option value="Active">Active</option>
+              <option value="Idle">Idle</option>
+              <option value="Offline">Offline</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelAddUserBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Product -->
+  <div class="modal-backdrop" id="addProductModal" style="display: none;">
+    <div class="modal-box glass-panel">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Catalog Product</h3>
+        <button class="modal-close-btn" id="closeAddProductModalBtn">&times;</button>
+      </div>
+      <form id="addProductForm" class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="newProdName">Product Name *</label>
+          <input type="text" id="newProdName" class="form-input" required placeholder="e.g. UltraWide Curved 34' Display">
+        </div>
+        <div class="form-row">
+          <div class="form-group col-half">
+            <label class="form-label" for="newProdCategory">Category</label>
+            <select id="newProdCategory" class="form-select">
+              <option value="Hardware">Hardware</option>
+              <option value="Peripherals">Peripherals</option>
+              <option value="Software">Software</option>
+              <option value="Audio">Audio</option>
+            </select>
+          </div>
+          <div class="form-group col-half">
+            <label class="form-label" for="newProdPrice">Price ($) *</label>
+            <input type="number" id="newProdPrice" class="form-input" step="0.01" min="0" required placeholder="499.00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newProdStock">Inventory Stock Count</label>
+          <input type="number" id="newProdStock" class="form-input" min="0" value="25">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelAddProductBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
